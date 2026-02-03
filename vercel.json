@@ -1,5 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/api/chat", "destination": "/api/chat.py" }
+  "routes": [
+    {
+      "src": "/api/chat",
+      "dest": "/api/chat.py",
+      "methods": ["POST", "OPTIONS"]
+    }
   ]
 }
