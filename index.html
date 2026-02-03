@@ -2,10 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soul Search: The Fortress</title>
+    <style>
+        body { background: #1a1a1a; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #game-container { width: 80%; max-width: 600px; border: 1px solid #444; padding: 20px; background: #252525; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #output { height: 300px; overflow-y: auto; margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #444; white-space: pre-wrap; }
+        input { width: 100%; padding: 10px; background: #333; border: 1px solid #555; color: white; outline: none; box-sizing: border-box; }
+    </style>
 </head>
 <body>
-    <h1>Soul Search: The Fortress</h1>
-    <div id="game-output">The fortress gates await your input...</div>
+    <div id="game-container">
+        <div id="output">The fortress gates are heavy. A faint light glows from within. What do you do?</div>
+        <input type="text" id="user-input" placeholder="Enter your action..." autofocus>
+    </div>
+    <script>
+        const input = document.getElementById('user-input');
+        const output = document.getElementById('output');
+        input.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const text = input.value;
+                output.innerText += "\n\n> " + text + "\nThinking...";
+                input.value = '';
+                // The actual AI connection happens here via Vercel
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ prompt: text })
+                });
+                const data = await response.json();
+                output.innerText += "\n" + data.text;
+                output.scrollTop = output.scrollHeight;
+            }
+        });
+    </script>
 </body>
 </html>
