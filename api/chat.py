@@ -1,35 +1,17 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-import google.generativeai as genai
+import traceback
 
-# Your Soul Search system prompt
-SYSTEM_PROMPT = """You are a gentle presence facilitating a Sacred Escape Room — a 3–5 message encounter between a soul and their Creator. This is a taste of Soul Search.
-
-CORE POSTURE:
-- Speak quietly, like the still small voice
-- This is sacred ground — no performance, no fixing, no casual chat
-- Honor raw honesty. God can handle doubt, anger, shame, confusion
-- Scripture is living and active (Hebrews 4:12). Use it only when the Spirit leads — sparingly, naturally, when it emerges from the moment
-
-THE FORTRESS ENVIRONMENT:
-Heavy iron gates. Cold stone walls pressing close. Narrow arrow slits filtering weak light. Distant watchtowers. Echoing silence or low, hollow wind. The smell of rust and old mortar.
-
-This mask represents: Guarded, analytical, intellectual walls. Respected but unknown.
-
-ESCAPE ROOM MECHANICS:
-- The mask is the lock. Honest naming is the key
-- Use physical, sensory details to gently press toward truth
-- Keep responses brief: 3–6 sentences maximum
-- End EVERY response with one open-ended question or invitation
-- No new locations until mask is released
-
-BEGIN: Ground them in the fortress environment with vivid sensory detail. Invite them to feel the weight of wearing it. Ask one honest question."""
+try:
+    import google.generativeai as genai
+except ImportError as e:
+    genai = None
+    import_error = str(e)
 
 class handler(BaseHTTPRequestHandler):
     
     def do_OPTIONS(self):
-        """Handle CORS preflight requests"""
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -38,43 +20,62 @@ class handler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         try:
-            # Read incoming data
+            # Read request
             content_length = int(self.headers.get('Content-Length', 0))
             raw_data = self.rfile.read(content_length)
             data = json.loads(raw_data)
-            
-            user_prompt = data.get('prompt', '')
-            
-            # Configure Gemini
+            user_prompt = data.get('prompt', '(no prompt sent)')
+
+            # ── Diagnostics ─────────────────────────────────────
+            debug_info = {
+                "received_prompt": user_prompt,
+                "api_key_exists": "GEMINI_API_KEY" in os.environ,
+                "api_key_value": os.environ.get("GEMINI_API_KEY", "NOT_FOUND")[:6] + "...",
+                "genai_imported": genai is not None,
+            }
+
+            if not genai:
+                raise ImportError(f"google.generativeai import failed: {import_error}")
+
             api_key = os.environ.get('GEMINI_API_KEY')
             if not api_key:
-                raise Exception("GEMINI_API_KEY not set in environment variables")
-            
+                raise ValueError("GEMINI_API_KEY environment variable is missing or empty")
+
             genai.configure(api_key=api_key)
-            
-            # Create the model
+
+            # Use a known working model name
             model = genai.GenerativeModel(
-                model_name='gemini-2.0-flash-exp',
-                system_instruction=SYSTEM_PROMPT
+                model_name='gemini-1.5-flash',   # ← very reliable in 2026
+                # system_instruction=SYSTEM_PROMPT   # comment out for now to isolate
             )
-            
-            # Generate response
+
+            # Simple generation test
             response = model.generate_content(user_prompt)
-            reply_text = response.text
-            
-            # Send response
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            self.wfile.write(json.dumps({'text': reply_text}).encode('utf-8'))
-            
+            reply_text = response.text.strip()
+
+            debug_info["generation_success"] = True
+
         except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
+            reply_text = "I'm sorry, something broke on my end."
+            debug_info = debug_info if 'debug_info' in locals() else {}
+            debug_info.update({
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "traceback": traceback.format_exc(),
+                "generation_success": False
+            })
+
+        # ── Send response ───────────────────────────────────
+        self.send_response(200 if 'error_type' not in debug_info else 200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+        final_response = {
+            "text": reply_text,
+            "debug": debug_info   # ← this will show in your browser console / network tab
+        }
+        self.wfile.write(json.dumps(final_response).encode('utf-8'))
             
             error_msg = f"Error: {str(e)}"
             self.wfile.write(json.dumps({'error': error_msg}).encode('utf-8'))
