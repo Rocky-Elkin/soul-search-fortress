@@ -9,13 +9,12 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
-        info = {
+        env_info = {
             "google_key_exists": "GOOGLE_API_KEY" in os.environ,
-            "google_key_value_preview": os.environ.get("GOOGLE_API_KEY", "NOT_SET")[:12] + "..." if os.environ.get("GOOGLE_API_KEY") else "NOT_SET",
-            "gemini_key_exists": "GEMINI_API_KEY" in os.environ,  # just to be sure
-            "all_env_keys_sample": list(os.environ.keys())[:25],  # first 25 keys only
+            "google_key_preview": os.environ.get("GOOGLE_API_KEY", "NOT_SET")[:12] + "..." if os.environ.get("GOOGLE_API_KEY") else "NOT_SET",
+            "all_env_keys": list(os.environ.keys())[:30],   # first 30 keys only
             "vercel_env": os.environ.get("VERCEL_ENV", "not_set"),
             "python_version": os.environ.get("PYTHON_VERSION", "not_set")
         }
 
-        self.wfile.write(json.dumps(info, indent=2).encode('utf-8'))
+        self.wfile.write(json.dumps(env_info, indent=2).encode('utf-8'))
