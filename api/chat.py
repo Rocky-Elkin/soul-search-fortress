@@ -20,7 +20,7 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        debug_lines = []  # Collect debug messages here
+        debug_lines = []
 
         try:
             content_length = int(self.headers.get('Content-Length', 0))
@@ -69,9 +69,10 @@ ESCAPE ROOM MECHANICS:
 
 BEGIN: Ground them in the fortress environment with vivid sensory detail. Invite them to feel the weight of wearing it. Ask one honest question."""
 
+            full_prompt = SYSTEM_PROMPT + "\n\nUser: " + user_prompt
+
             model = genai.GenerativeModel(
                 model_name='gemini-3-flash-preview',
-                system_instruction=SYSTEM_PROMPT,
                 generation_config={
                     "temperature": 0.4,
                     "top_p": 0.9,
@@ -79,7 +80,7 @@ BEGIN: Ground them in the fortress environment with vivid sensory detail. Invite
                 }
             )
 
-            response = model.generate_content(user_prompt)
+            response = model.generate_content(full_prompt)
             reply_text = response.text.strip()
 
             debug_lines.append("Generation SUCCESS!")
