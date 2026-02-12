@@ -47,13 +47,12 @@ class handler(BaseHTTPRequestHandler):
 
             genai.configure(api_key=api_key)
 
-            # Correct model from your AI Studio screenshot
             model = genai.GenerativeModel(
                 model_name='gemini-3-flash-preview',
                 generation_config={
-                    "temperature": 0.4,          # Low for reverent, consistent tone
+                    "temperature": 0.4,
                     "top_p": 0.9,
-                    "max_output_tokens": 200     # Keeps replies brief
+                    "max_output_tokens": 200
                 }
             )
 
@@ -70,11 +69,10 @@ class handler(BaseHTTPRequestHandler):
             debug_lines.append("ERROR OCCURRED!")
             debug_lines.append(f"Type: {error_type}")
             debug_lines.append(f"Message: {error_msg}")
-            debug_lines.append(f"Traceback: {tb[:500]}...")  # Truncate long tracebacks
+            debug_lines.append(f"Traceback: {tb[:500]}...")
 
             reply_text = "I'm sorry, something broke on my end.\n\nDebug info (for troubleshooting):\n" + "\n".join(debug_lines)
 
-        # Always send 200 so browser sees the debug text
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
