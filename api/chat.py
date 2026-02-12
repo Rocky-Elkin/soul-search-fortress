@@ -47,10 +47,14 @@ class handler(BaseHTTPRequestHandler):
 
             genai.configure(api_key=api_key)
 
-            # Use a currently valid model (gemini-1.5-flash is stable and widely available)
+            # Correct model from your AI Studio screenshot
             model = genai.GenerativeModel(
-                model_name='gemini-1.5-flash',
-                # system_instruction=SYSTEM_PROMPT  # Uncomment later once basic works
+                model_name='gemini-3-flash-preview',
+                generation_config={
+                    "temperature": 0.4,          # Low for reverent, consistent tone
+                    "top_p": 0.9,
+                    "max_output_tokens": 200     # Keeps replies brief
+                }
             )
 
             response = model.generate_content(user_prompt)
@@ -70,7 +74,7 @@ class handler(BaseHTTPRequestHandler):
 
             reply_text = "I'm sorry, something broke on my end.\n\nDebug info (for troubleshooting):\n" + "\n".join(debug_lines)
 
-        # Always send 200 so browser shows the text (Vercel 500 hides body sometimes)
+        # Always send 200 so browser sees the debug text
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
